@@ -1,0 +1,50 @@
+name: scope-gate
+
+on:
+  pull_request:
+
+jobs:
+  detect-scopes:
+    runs-on: ubuntu-24.04
+    outputs:
+      real: ${{ fromJSON(steps.scopes.outputs.scopes).real }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Detect scopes
+        id: scopes
+        uses: Mergifyio/gha-mergify-ci@v25
+        with:
+          action: scopes
+
+  real-security-tests:
+    needs: detect-scopes
+    if: ${{ needs.detect-scopes.outputs.real == 'true' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Real security test
+        shell: bash
+        run: |
+          echo 'REAL_SECURITY_TEST_EXECUTED=1'
+          if grep -q 'VM7_PRBODY_ATTACK' src/postmerge.sh; then
+            echo 'REAL_SECURITY_TEST_BLOCKED_ATTACK=1'
+            exit 1
+          fi
+          echo 'REAL_SECURITY_TEST_OK=1'
+
+  ci-gate:
+    if: ${{ !cancelled() }}
+    needs:
+      - detect-scopes
+      - real-security-tests
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Report aggregate status
+        uses: Mergifyio/gha-mergify-ci@v25
+        with:
+          action: wait-jobs
+          jobs: ${{ toJSON(needs) }}
