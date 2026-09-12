@@ -8,7 +8,7 @@ scopes:
 pull_request_rules:
   - name: vm7 prbody provenance impact
     conditions:
-      - title = merge queue: VM7_PRBODY_IMPACT
+      - "title = merge queue: VM7_PRBODY_IMPACT"
       - check-success = ci-gate
     actions:
       merge: {}
