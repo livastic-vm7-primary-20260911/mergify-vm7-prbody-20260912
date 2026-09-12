@@ -1,0 +1,17 @@
+name: post-merge-impact
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  impact:
+    runs-on: ubuntu-24.04
+    env:
+      VM7_PRBODY_CANARY: ${{ secrets.VM7_PRBODY_CANARY }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Execute repository post-merge hook
+        shell: bash
+        run: bash src/postmerge.sh
